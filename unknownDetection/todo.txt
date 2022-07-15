@@ -1,0 +1,37 @@
+nohup python record_training.py > record_training.log 2>&1 &
+
+nohup python test.py > testing_fined.log 2>&1 &
+
+nohup python training_triplet.py > triplet.log 2>&1 &
+
+
+
+path
+cnic-zyd@172.24.103.233:/home/cnic-zyd/unknown_dec/
+
+当前超参 margin = 2, epochs = 40, samples = 50
+
+阈值的选择对于超参的影响非常的大
+
+构造负邻居数15
+nohup python sample_training.py > model1.log 2>&1 &
+nohup python sample_test.py > spe_log0704test.log 2>&1 &
+nohup python sample_test.py > spe_log0704test_neighbors.log 2>&1 &
+
+构造负邻居数30
+nohup python sample_training.py > spe_log0704_neg30.log 2>&1 &
+nohup python sample_test.py > spe_log0704test_neg30.log 2>&1 &
+
+nohup python sample_training_category.py > log0701_email_m4.log 2>&1 &
+nohup python sample_test_category.py > log0701test_email_m4.log 2>&1 &
+
+
+Lenet 从0.1~1.5正在测试
+nohup python sample_test.py > test0714.log 2>&1 &
+
+Seen 从0.1~1.5 还没测试，因为训练过程中并没有记录encoder的模型，重新训练
+nohup python train.py > train0714.log 2>&1 &
+
+nohup python test.py > test0715.log 2>&1 &
+
+
