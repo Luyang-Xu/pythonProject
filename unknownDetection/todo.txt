@@ -34,4 +34,6 @@ nohup python train.py > train0714.log 2>&1 &
 
 nohup python test.py > test0715.log 2>&1 &
 
+the github hub have been linked
+
 
