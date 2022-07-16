@@ -161,7 +161,7 @@ print(known_class.shape, known_label.shape)
 print(len(unknown_class), len(unknown_label))
 print(unknown_class.shape, unknown_label.shape)
 
-threshold_coll = np.linspace(0.1, 1.5, 15)
+threshold_coll = np.linspace(0.1, 1.1, 11)
 sampling_num_coll = [10]
 neighbors = 10
 
