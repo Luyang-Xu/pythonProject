@@ -2,22 +2,26 @@
 import metrics
 import config
 import utils
-import numpy as np
-import json
-import data_generator
-from tensorflow.keras.models import load_model
+import model
 import time
-# disable GPU devices
+import numpy as np
+import data_generator
+import sample_select
+import json
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+
 import os
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# from tensorflow.keras.utils import plot_model
+# import tensorflow_addons as tfa
 
 # load MNIST dataset
 flows, labels = data_generator.load_data()
 flows = np.abs(flows)
 
-# transfer the textual into numerical labels
 unique_labels = set(labels)
 print(unique_labels)
 
@@ -28,7 +32,7 @@ print(known_class.shape, known_label.shape)
 print('[INFO...] unknown class shape')
 print(unknown_class.shape, unknown_label.shape)
 
-with open('neighbor_records.txt', 'r') as f:
+with open('neighbors_semihard.txt', 'r') as f:
     record_map = json.loads(f.readline())
     name2id = json.loads(f.readline())
     id2name = json.loads(f.readline())
@@ -36,12 +40,27 @@ with open('neighbor_records.txt', 'r') as f:
 numerical_labels = []
 for lab in known_label:
     numerical_labels.append(name2id[lab])
-
+print(['INFO... Split train and test'])
 identical_labels = set(numerical_labels)
+
+train, val, test = utils.split_train_val_test(known_class, np.array(numerical_labels), 0.9, 0.05)
+train_flows = train[0]
+train_labels = train[1]
+val_flows = val[0]
+val_labels = val[1]
+test_flows = test[0]
+test_labels = test[1]
+
+train_flows = train_flows / 255.0
+val_flows = val_flows / 255.0
+test_flows = test_flows / 255.0
+
+
 # load the model
 print("[INFO] loading siamese model...")
 print("[INFO] model path:" + config.ENCODER_PATH)
-model = load_model(config.ENCODER_PATH, compile=False)
+encoder = load_model(config.ENCODER_PATH, compile=False)
+neighbors_num = 10
 
 
 def construct_samples(known_class, record_map, N=1):
@@ -94,27 +113,34 @@ def known_detection(data, labels, categories, threshold, encoder, mapping, N):
 
         for key in comp_samples.keys():
             coll = comp_samples[key]
+            # ensure all the comparative samples which are less than N
+
             original_sample = encoder(comp[:min(len(coll), N)])
             comparative_neighbors = encoder(coll)
 
             assert len(original_sample) == len(comparative_neighbors)
             val = []
             for i in range(len(original_sample)):
-                val.append(utils.euclidean_distance_test(original_sample[i], comparative_neighbors[i]))
+                val.append(utils.euclidean_distance_triplet(original_sample[i], comparative_neighbors[i]))
             total_category_mean_pred[key] = np.mean(val)
+
+        # for k,v in total_category_mean_pred.items():
+        #     print(k,v)
 
         if min(total_category_mean_pred.values()) > threshold:
             KU += 1
         else:
             min_dist_key = min(total_category_mean_pred, key=lambda x: total_category_mean_pred[x])
+            # if mapping[min_dist_key] == tested_label:
             if int(min_dist_key) == int(tested_label):
                 KP += 1
             else:
                 KN += 1
+
     return (KP, KN, KU)
 
 
-def unknown_detection(data, labels, categories, threshold, encoder, mapping, N):
+def unknown_detection(data, labels, categories, threshold, model, mapping, N):
     UP = 0
     UN = 0
     # normalization and expand_dims
@@ -140,13 +166,14 @@ def unknown_detection(data, labels, categories, threshold, encoder, mapping, N):
 
         for key in comp_samples:
             coll = comp_samples[key]
+
             original_sample = encoder(comp[:min(len(coll), N)])
             comparative_neighbors = encoder(coll)
 
             assert len(original_sample) == len(comparative_neighbors)
             val = []
             for i in range(len(original_sample)):
-                val.append(utils.euclidean_distance_test(original_sample[i], comparative_neighbors[i]))
+                val.append(utils.euclidean_distance_triplet(original_sample[i], comparative_neighbors[i]))
             total_category_mean_pred[key] = np.mean(val)
 
         if min(total_category_mean_pred.values()) > threshold:
@@ -157,32 +184,31 @@ def unknown_detection(data, labels, categories, threshold, encoder, mapping, N):
     return (UP, UN)
 
 
-print(len(known_class), len(known_label))
-print(known_class.shape, known_label.shape)
-print(len(unknown_class), len(unknown_label))
-print(unknown_class.shape, unknown_label.shape)
-print('[Unknown Categories]...', config.UNKNOWN_CATEGORIES)
-# use the best threshold to compute
-threshold_coll = [0.08, 0.1, 0.2]  # np.linspace(0.1, 0.6, 6)
-sampling_num_coll = [10]
-neighbors = 10
-
 start_time = time.time()
-for threshold in threshold_coll:
-    categories = construct_samples(known_class, record_map, N=neighbors)
+thresholds = [7.5]
+for t in thresholds:
+    categories = construct_samples(known_class, record_map, 10)
+    print(known_class.shape, known_label.shape)
+    (KP, KN, KU) = known_detection(known_class, np.array(numerical_labels), categories, threshold=t,
+                                   encoder=encoder,
+                                   mapping=name2id,
+                                   N=neighbors_num)
 
-    (KP, KN, KU) = known_detection(known_class, np.array(numerical_labels), categories, threshold, model,
-                                   name2id, N=neighbors)
-    (UP, UN) = unknown_detection(unknown_class, unknown_label, categories, threshold, model, name2id, N=neighbors)
+    print(unknown_class.shape, unknown_label.shape)
+    (UP, UN) = unknown_detection(unknown_class, unknown_label, categories, t, encoder, name2id,
+                                 N=neighbors_num)
+    end_time = time.time()
 
     (pr, acc, fdr, tdr) = metrics.cal_four_metrics(KP, KN, KU, UP, UN)
 
-    print('[Hyper-parameters]... neighbors:' + str(neighbors) + '; threshold:' + str(threshold))
+    neighbors = 10
+    print('[Hyper-parameters]... neighbors:' + str(neighbors) + '; threshold:' + str(t))
     print('[Purity Rate]...', str(pr * 100) + '%')
     print('[Accuracy]...', str(acc * 100) + '%')
     print('[False Detection Rate]...', str(fdr * 100) + '%')
     print('[True Detection Rate]...', str(tdr * 100) + '%')
     print('KP, KN, KU, UP, UN:' + str(KP) + ', ' + str(KN) + ', ' + str(KU) + ', ' + str(UP) + ', ' + str(UN))
     print('*' * 30)
+
 end_time = time.time()
-print('[Time Cost...(mins)]', (end_time - start_time) / 60)
+print('[Time cost...]', str((end_time - start_time) / 60), ' minutes')

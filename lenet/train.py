@@ -56,9 +56,12 @@ val_labels = val[1]
 test_flows = test[0]
 test_labels = test[1]
 
-train_flows = train_flows / 255
-val_flows = val_flows / 255
-test_flows = test_flows / 255
+# mean_val = np.mean(train_flows)
+# std_val = np.std(train_flows)
+
+train_flows = train_flows / 255.0
+val_flows = val_flows / 255.0
+test_flows = test_flows / 255.0
 
 # add a channel dimension to the images
 train_flows = np.expand_dims(train_flows, axis=-1)

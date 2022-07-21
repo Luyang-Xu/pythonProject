@@ -26,10 +26,10 @@ def stacked_plot(pos_distance, neg_distance, category):
     bins = np.arange(min(min(pos_distance), min(neg_distance)), max(max(pos_distance), max(neg_distance)), 0.01)
 
     # 男性乘客年龄直方图
-    plt.hist(pos_distance, bins=bins, label='known', edgecolor='k', color='steelblue', alpha=0.7)
+    plt.hist(pos_distance, bins=bins, label='POS', edgecolor='k', color='steelblue', alpha=0.7)
 
     # 女性乘客年龄直方图
-    plt.hist(neg_distance, bins=bins, label='unknown', edgecolor='k', alpha=0.5, color='r')
+    plt.hist(neg_distance, bins=bins, label='NEG', edgecolor='k', alpha=0.5, color='r')
 
     # 调整刻度
     plt.xticks(fontsize=15)
@@ -47,16 +47,15 @@ def stacked_plot(pos_distance, neg_distance, category):
     plt.legend(loc='best', fontsize=20)
 
     # 显示图形
-    plt.savefig(path + category + '_testing1.pdf')
+    plt.savefig(category + '_testing.pdf')
 
-
-path = '/Users/luyang/PycharmProjects/pythonProject/tripletLoss/'
-file = 'distance.txt'
-
-(pos_distance, neg_distance) = read_data(path, file)
-
-
-stacked_plot(pos_distance, neg_distance, 'training')
+# path = '/Users/luyang/PycharmProjects/pythonProject/tripletLoss/'
+# file = 'distance.txt'
+#
+# (pos_distance, neg_distance) = read_data(path, file)
+#
+#
+# stacked_plot(pos_distance, neg_distance, 'training')
 # thresholds_plots(pos_distance, neg_distance)
 # single_plot(pos_distance)
 # single_plot(neg_distance)

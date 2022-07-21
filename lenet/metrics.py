@@ -6,7 +6,7 @@ import config
 
 # https://blog.csdn.net/autocyz/article/details/53149760
 
-def contrastive_loss(y, preds, margin=1):
+def contrastive_loss(y, preds, margin=config.MARGIN):
     # explicitly cast the true class label data type to the predicted
     # class label data type (otherwise we run the risk of having two
     # separate data types, causing TensorFlow to error out)
@@ -18,6 +18,7 @@ def contrastive_loss(y, preds, margin=1):
     loss = K.mean(y * squaredPreds + (1 - y) * squaredMargin)
     # return the computed contrastive loss to the calling function
     return loss
+
 
 
 def triplet_loss(ap, an, margin=config.MARGIN):
