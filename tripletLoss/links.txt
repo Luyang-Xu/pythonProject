@@ -1,0 +1,8 @@
+lossless Triplet Loss
+https://towardsdatascience.com/lossless-triplet-loss-7e932f990b24
+
+github implementation
+https://gist.github.com/marcolivierarsenault/a7ef5ab45e1fbb37fbe13b37a0de0257
+
+quadLoss:
+https://medium.com/@crimy/beyond-triplet-loss-one-shot-learning-experiments-with-quadruplet-loss-16671ed51290#:~:text=Improvement%20of%20the%20triplet%20loss&text=It%20contains%20the%20same%20difference,margin%E2%80%9D%20hyper%2Dparameter%20alpha2.
